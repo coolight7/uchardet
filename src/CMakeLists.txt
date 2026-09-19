@@ -75,17 +75,28 @@ if (BUILD_STATIC AND BUILD_SHARED_LIBS)
 	set (UCHARDET_STATIC_LIBRARY libuchardet_static)
 endif ()
 
-add_definitions(
-	-DVERSION="${UCHARDET_VERSION}"
-	-Wall
-)
-
-if (CMAKE_BUILD_TYPE MATCHES Debug)
+# 编译参数按编译器区分: -Wall / -O0 / -g3 都是 GCC/Clang 风格参数。
+# MSVC 下 -Wall 会被 CMake 映射为 /Wall (EnableAllWarnings), 于是 C4711 (自动内联
+# 提示)、C4710 (未内联提示)、C5045 (Spectre 缓解提示) 这类信息类告警全部输出,
+# 编译日志噪音很大; -O0 / -g3 则直接被 cl 判为未知参数 (warning D9002)。因此这些
+# 参数只对非 MSVC 编译器启用。
+if (MSVC)
 	add_definitions(
-		-O0
-		-g3
+		-DVERSION="${UCHARDET_VERSION}"
 	)
-endif (CMAKE_BUILD_TYPE MATCHES Debug)
+else ()
+	add_definitions(
+		-DVERSION="${UCHARDET_VERSION}"
+		-Wall
+	)
+
+	if (CMAKE_BUILD_TYPE MATCHES Debug)
+		add_definitions(
+			-O0
+			-g3
+		)
+	endif (CMAKE_BUILD_TYPE MATCHES Debug)
+endif ()
 
 add_library(
 	${UCHARDET_LIBRARY}
